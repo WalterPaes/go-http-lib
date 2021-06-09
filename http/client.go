@@ -51,6 +51,18 @@ func (c *Client) Post(path string, body interface{}) (*Client, error) {
 	return c.execute()
 }
 
+func (c *Client) Get(path string, params map[string]string) (*Client, error) {
+	request, err := http.NewRequest(http.MethodGet, c.url+path, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	c.request = request
+	c.setHeaders()
+	c.queryBuilder(params)
+	return c.execute()
+}
+
 func (c *Client) setHeaders() {
 	for key, value := range c.headers {
 		c.request.Header.Set(key, value)
@@ -82,4 +94,12 @@ func (c *Client) Decode(i interface{}) (interface{}, error) {
 	}
 
 	return i, nil
+}
+
+func (c *Client) queryBuilder(params map[string]string) {
+	q := c.request.URL.Query()
+	for key, value := range params {
+		q.Add(key, value)
+	}
+	c.request.URL.RawQuery = q.Encode()
 }
