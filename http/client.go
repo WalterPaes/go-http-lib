@@ -20,8 +20,9 @@ type Request struct {
 
 func New(url string, client *http.Client) *Request {
 	return &Request{
-		url:    url,
-		client: client,
+		url:     url,
+		client:  client,
+		headers: map[string]string{},
 	}
 }
 

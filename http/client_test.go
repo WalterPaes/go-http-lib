@@ -45,7 +45,7 @@ func TestRequest_AddHeader(t *testing.T) {
 	}
 }
 
-func TestRequest_Get(t *testing.T) {
+func TestRequest_GetJsonDecode(t *testing.T) {
 	cases := []struct {
 		title    string
 		url      string
@@ -84,6 +84,52 @@ func TestRequest_Get(t *testing.T) {
 		assert(t, c.title, c.url, c.path, c.response)
 	}
 }
+
+//func TestRequest_GetInterfaceDecode(t *testing.T) {
+//	cases := []struct {
+//		title    string
+//		url      string
+//		path     string
+//		response string
+//	}{
+//		{
+//			"Success request: response interface decode",
+//			baseUrl,
+//			successPath,
+//			responseSuccess,
+//		},
+//		{
+//			"Fail request: response interface decode",
+//			baseUrl,
+//			failPath,
+//			responseFail,
+//		},
+//	}
+//
+//	assert := func(t *testing.T, title, baseUrl, path, expectedResponse string) {
+//		t.Run(title, func(t *testing.T) {
+//			data := make(map[string]string)
+//			request := createServerAndRequest(t, path, expectedResponse, baseUrl)
+//			response, err := request.Decode(data)
+//			if err != nil {
+//				t.Fatal(err.Error())
+//			}
+//
+//			err = json.Unmarshal([]byte(expectedResponse), &data)
+//			if err != nil {
+//				t.Fatal(err.Error())
+//			}
+//
+//			if !reflect.DeepEqual(response, data) {
+//				t.Errorf("Was expected '%+v', but got '%+v'", data, response)
+//			}
+//		})
+//	}
+//
+//	for _, c := range cases {
+//		assert(t, c.title, c.url, c.path, c.response)
+//	}
+//}
 
 func testServer(t *testing.T) (*http.Client, *http.ServeMux, *httptest.Server) {
 	t.Helper()
