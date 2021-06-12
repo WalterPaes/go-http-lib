@@ -9,29 +9,29 @@ import (
 )
 
 type Request struct {
-	Url        string
-	Headers    map[string]string
-	StatusCode int
-
+	url          string
+	headers      map[string]string
 	client       *http.Client
 	request      *http.Request
 	responseBody io.ReadCloser
+
+	StatusCode int
 }
 
 func New(url string, client *http.Client) *Request {
 	return &Request{
-		Url:    url,
+		url:    url,
 		client: client,
 	}
 }
 
 func (c *Request) AddHeader(key, value string) *Request {
-	c.Headers[key] = value
+	c.headers[key] = value
 	return c
 }
 
 func (c *Request) setHeaders() {
-	for key, value := range c.Headers {
+	for key, value := range c.headers {
 		c.request.Header.Set(key, value)
 	}
 }
@@ -42,7 +42,7 @@ func (c *Request) Post(path string, body interface{}) error {
 		return err
 	}
 
-	request, err := http.NewRequest(http.MethodPost, c.Url+path, bytes.NewBuffer(data))
+	request, err := http.NewRequest(http.MethodPost, c.url+path, bytes.NewBuffer(data))
 	if err != nil {
 		return err
 	}
@@ -53,7 +53,7 @@ func (c *Request) Post(path string, body interface{}) error {
 }
 
 func (c *Request) Get(path string, params map[string]string) error {
-	request, err := http.NewRequest(http.MethodGet, c.Url+path, nil)
+	request, err := http.NewRequest(http.MethodGet, c.url+path, nil)
 	if err != nil {
 		return err
 	}
