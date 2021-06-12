@@ -51,24 +51,41 @@ func TestRequest_GetJsonDecode(t *testing.T) {
 		url      string
 		path     string
 		response string
+		params   map[string]string
 	}{
 		{
-			"Success request: response json decode",
+			"Success request without param: response json decode",
 			baseUrl,
 			successPath,
 			responseSuccess,
+			nil,
 		},
 		{
-			"Fail request: response json decode",
+			"Fail request  without param: response json decode",
 			baseUrl,
 			failPath,
 			responseFail,
+			nil,
+		},
+		{
+			"Success request with param: response json decode",
+			baseUrl,
+			successPath,
+			responseSuccess,
+			map[string]string{"foo": "bar"},
+		},
+		{
+			"Fail request  without param: response json decode",
+			baseUrl,
+			failPath,
+			responseFail,
+			map[string]string{"foo": "bar"},
 		},
 	}
 
-	assert := func(t *testing.T, title, baseUrl, path, expectedResponse string) {
+	assert := func(t *testing.T, title, baseUrl, path, expectedResponse string, params map[string]string) {
 		t.Run(title, func(t *testing.T) {
-			request := createServerAndRequest(t, path, expectedResponse, baseUrl)
+			request := createGetRequest(t, path, expectedResponse, baseUrl, params)
 			response, err := request.Json()
 			if err != nil {
 				t.Fatal(err.Error())
@@ -81,7 +98,64 @@ func TestRequest_GetJsonDecode(t *testing.T) {
 	}
 
 	for _, c := range cases {
-		assert(t, c.title, c.url, c.path, c.response)
+		assert(t, c.title, c.url, c.path, c.response, c.params)
+	}
+}
+
+func TestRequest_Post(t *testing.T) {
+	cases := []struct {
+		title    string
+		url      string
+		path     string
+		response string
+		body     interface{}
+	}{
+		{
+			"Success request without body: response json decode",
+			baseUrl,
+			successPath,
+			responseSuccess,
+			nil,
+		},
+		{
+			"Fail request without body: response json decode",
+			baseUrl,
+			failPath,
+			responseFail,
+			nil,
+		},
+		{
+			"Success request with body: response json decode",
+			baseUrl,
+			successPath,
+			responseSuccess,
+			map[string]string{"foo": "bar"},
+		},
+		{
+			"Fail request with body: response json decode",
+			baseUrl,
+			failPath,
+			responseFail,
+			map[string]string{"foo": "bar"},
+		},
+	}
+
+	assert := func(t *testing.T, title, baseUrl, path, expectedResponse string, body interface{}) {
+		t.Run(title, func(t *testing.T) {
+			request := createPostRequest(t, path, expectedResponse, baseUrl, body)
+			response, err := request.Json()
+			if err != nil {
+				t.Fatal(err.Error())
+			}
+
+			if response != expectedResponse {
+				t.Errorf("Was expected '%s', but got '%s'", response, expectedResponse)
+			}
+		})
+	}
+
+	for _, c := range cases {
+		assert(t, c.title, c.url, c.path, c.response, c.body)
 	}
 }
 
@@ -109,7 +183,7 @@ func TestRequest_GetJsonDecode(t *testing.T) {
 //	assert := func(t *testing.T, title, baseUrl, path, expectedResponse string) {
 //		t.Run(title, func(t *testing.T) {
 //			data := make(map[string]string)
-//			request := createServerAndRequest(t, path, expectedResponse, baseUrl)
+//			request := createGetRequest(t, path, expectedResponse, baseUrl)
 //			response, err := request.Decode(data)
 //			if err != nil {
 //				t.Fatal(err.Error())
@@ -152,7 +226,7 @@ func handleFunc(t *testing.T, mux *http.ServeMux, path, message string) {
 	})
 }
 
-func createServerAndRequest(t *testing.T, path, expectedResponse, baseUrl string) *Request {
+func createGetRequest(t *testing.T, path, expectedResponse, baseUrl string, params map[string]string) *Request {
 	t.Helper()
 	client, mux, server := testServer(t)
 	defer server.Close()
@@ -160,6 +234,20 @@ func createServerAndRequest(t *testing.T, path, expectedResponse, baseUrl string
 
 	request := New(baseUrl, client)
 	err := request.Get(path, nil)
+	if err != nil {
+		t.Fatal(err.Error())
+	}
+	return request
+}
+
+func createPostRequest(t *testing.T, path, expectedResponse, baseUrl string, body interface{}) *Request {
+	t.Helper()
+	client, mux, server := testServer(t)
+	defer server.Close()
+	handleFunc(t, mux, path, expectedResponse)
+
+	request := New(baseUrl, client)
+	err := request.Post(path, body)
 	if err != nil {
 		t.Fatal(err.Error())
 	}
