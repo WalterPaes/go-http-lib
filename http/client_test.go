@@ -45,27 +45,44 @@ func TestRequest_AddHeader(t *testing.T) {
 	}
 }
 
-func TestRequest_Post(t *testing.T) {
-	t.Run("Success", func(t *testing.T) {
-		client, mux, server := testServer(t)
-		defer server.Close()
-		handleFunc(t, mux, successPath, responseSuccess)
+func TestRequest_Get(t *testing.T) {
+	cases := []struct {
+		title    string
+		url      string
+		path     string
+		response string
+	}{
+		{
+			"Success request: response json decode",
+			baseUrl,
+			successPath,
+			responseSuccess,
+		},
+		{
+			"Fail request: response json decode",
+			baseUrl,
+			failPath,
+			responseFail,
+		},
+	}
 
-		request := New(baseUrl, client)
-		err := request.Get(successPath, nil)
-		if err != nil {
-			t.Fatal(err.Error())
-		}
+	assert := func(t *testing.T, title, baseUrl, path, expectedResponse string) {
+		t.Run(title, func(t *testing.T) {
+			request := createServerAndRequest(t, path, expectedResponse, baseUrl)
+			response, err := request.Json()
+			if err != nil {
+				t.Fatal(err.Error())
+			}
 
-		response, err := request.Json()
-		if err != nil {
-			t.Fatal(err.Error())
-		}
+			if response != expectedResponse {
+				t.Errorf("Was expected '%s', but got '%s'", response, expectedResponse)
+			}
+		})
+	}
 
-		if response != responseSuccess {
-			t.Errorf("Was expected '%s', but got '%s'", response, responseSuccess)
-		}
-	})
+	for _, c := range cases {
+		assert(t, c.title, c.url, c.path, c.response)
+	}
 }
 
 func testServer(t *testing.T) (*http.Client, *http.ServeMux, *httptest.Server) {
@@ -87,4 +104,18 @@ func handleFunc(t *testing.T, mux *http.ServeMux, path, message string) {
 		w.Header().Set("Content-Type", "application/json")
 		fmt.Fprintf(w, message)
 	})
+}
+
+func createServerAndRequest(t *testing.T, path, expectedResponse, baseUrl string) *Request {
+	t.Helper()
+	client, mux, server := testServer(t)
+	defer server.Close()
+	handleFunc(t, mux, path, expectedResponse)
+
+	request := New(baseUrl, client)
+	err := request.Get(path, nil)
+	if err != nil {
+		t.Fatal(err.Error())
+	}
+	return request
 }
