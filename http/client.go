@@ -83,10 +83,26 @@ func (c *Request) execute() error {
 	return nil
 }
 
-func (c *Request) Decode(i interface{}) (interface{}, error) {
+func (c *Request) readBody() ([]byte, error) {
 	defer c.responseBody.Close()
 
 	body, err := ioutil.ReadAll(c.responseBody)
+	if err != nil {
+		return nil, err
+	}
+	return body, nil
+}
+
+func (c *Request) Json() (string, error) {
+	body, err := c.readBody()
+	if err != nil {
+		return "", err
+	}
+	return string(body), nil
+}
+
+func (c *Request) Decode(i interface{}) (interface{}, error) {
+	body, err := c.readBody()
 	if err != nil {
 		return nil, err
 	}

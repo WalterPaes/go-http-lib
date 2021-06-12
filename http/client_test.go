@@ -57,12 +57,14 @@ func TestRequest_Post(t *testing.T) {
 			t.Fatal(err.Error())
 		}
 
-		result, err := request.Decode(map[string]string{})
+		response, err := request.Json()
 		if err != nil {
 			t.Fatal(err.Error())
 		}
 
-		fmt.Println(result)
+		if response != responseSuccess {
+			t.Errorf("Was expected '%s', but got '%s'", response, responseSuccess)
+		}
 	})
 }
 
