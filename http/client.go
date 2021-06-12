@@ -6,44 +6,45 @@ import (
 	"io"
 	"io/ioutil"
 	"net/http"
-	"time"
 )
 
-type Client struct {
-	url          string
-	headers      map[string]string
+type Request struct {
+	Url        string
+	Headers    map[string]string
+	StatusCode int
+
 	client       *http.Client
 	request      *http.Request
 	responseBody io.ReadCloser
-	StatusCode   int
 }
 
-func New(url string) *Client {
-	return &Client{
-		url:    url,
-		client: &http.Client{},
+func New(url string, client *http.Client) *Request {
+	return &Request{
+		Url:    url,
+		client: client,
 	}
 }
 
-func (c *Client) AddHeader(key, value string) *Client {
-	c.headers[key] = value
+func (c *Request) AddHeader(key, value string) *Request {
+	c.Headers[key] = value
 	return c
 }
 
-func (c *Client) SetTimeout(timeout int64) *Client {
-	c.client.Timeout = time.Duration(timeout)
-	return c
+func (c *Request) setHeaders() {
+	for key, value := range c.Headers {
+		c.request.Header.Set(key, value)
+	}
 }
 
-func (c *Client) Post(path string, body interface{}) (*Client, error) {
+func (c *Request) Post(path string, body interface{}) error {
 	data, err := json.Marshal(body)
 	if err != nil {
-		return nil, err
+		return err
 	}
 
-	request, err := http.NewRequest(http.MethodPost, c.url+path, bytes.NewBuffer(data))
+	request, err := http.NewRequest(http.MethodPost, c.Url+path, bytes.NewBuffer(data))
 	if err != nil {
-		return nil, err
+		return err
 	}
 
 	c.request = request
@@ -51,10 +52,10 @@ func (c *Client) Post(path string, body interface{}) (*Client, error) {
 	return c.execute()
 }
 
-func (c *Client) Get(path string, params map[string]string) (*Client, error) {
-	request, err := http.NewRequest(http.MethodGet, c.url+path, nil)
+func (c *Request) Get(path string, params map[string]string) error {
+	request, err := http.NewRequest(http.MethodGet, c.Url+path, nil)
 	if err != nil {
-		return nil, err
+		return err
 	}
 
 	c.request = request
@@ -63,24 +64,26 @@ func (c *Client) Get(path string, params map[string]string) (*Client, error) {
 	return c.execute()
 }
 
-func (c *Client) setHeaders() {
-	for key, value := range c.headers {
-		c.request.Header.Set(key, value)
+func (c *Request) queryBuilder(params map[string]string) {
+	q := c.request.URL.Query()
+	for key, value := range params {
+		q.Add(key, value)
 	}
+	c.request.URL.RawQuery = q.Encode()
 }
 
-func (c *Client) execute() (*Client, error) {
+func (c *Request) execute() error {
 	response, err := c.client.Do(c.request)
 	if err != nil {
-		return nil, err
+		return err
 	}
 
 	c.StatusCode = response.StatusCode
 	c.responseBody = response.Body
-	return c, nil
+	return nil
 }
 
-func (c *Client) Decode(i interface{}) (interface{}, error) {
+func (c *Request) Decode(i interface{}) (interface{}, error) {
 	defer c.responseBody.Close()
 
 	body, err := ioutil.ReadAll(c.responseBody)
@@ -94,12 +97,4 @@ func (c *Client) Decode(i interface{}) (interface{}, error) {
 	}
 
 	return i, nil
-}
-
-func (c *Client) queryBuilder(params map[string]string) {
-	q := c.request.URL.Query()
-	for key, value := range params {
-		q.Add(key, value)
-	}
-	c.request.URL.RawQuery = q.Encode()
 }
