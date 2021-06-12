@@ -1,6 +1,7 @@
 package http
 
 import (
+	"encoding/json"
 	"fmt"
 	"net/http"
 	"net/http/httptest"
@@ -159,51 +160,54 @@ func TestRequest_Post(t *testing.T) {
 	}
 }
 
-//func TestRequest_GetInterfaceDecode(t *testing.T) {
-//	cases := []struct {
-//		title    string
-//		url      string
-//		path     string
-//		response string
-//	}{
-//		{
-//			"Success request: response interface decode",
-//			baseUrl,
-//			successPath,
-//			responseSuccess,
-//		},
-//		{
-//			"Fail request: response interface decode",
-//			baseUrl,
-//			failPath,
-//			responseFail,
-//		},
-//	}
-//
-//	assert := func(t *testing.T, title, baseUrl, path, expectedResponse string) {
-//		t.Run(title, func(t *testing.T) {
-//			data := make(map[string]string)
-//			request := createGetRequest(t, path, expectedResponse, baseUrl)
-//			response, err := request.Decode(data)
-//			if err != nil {
-//				t.Fatal(err.Error())
-//			}
-//
-//			err = json.Unmarshal([]byte(expectedResponse), &data)
-//			if err != nil {
-//				t.Fatal(err.Error())
-//			}
-//
-//			if !reflect.DeepEqual(response, data) {
-//				t.Errorf("Was expected '%+v', but got '%+v'", data, response)
-//			}
-//		})
-//	}
-//
-//	for _, c := range cases {
-//		assert(t, c.title, c.url, c.path, c.response)
-//	}
-//}
+func TestRequest_GetInterfaceDecode(t *testing.T) {
+	cases := []struct {
+		title    string
+		url      string
+		path     string
+		response string
+		params   map[string]string
+	}{
+		{
+			"Success request: response interface decode",
+			baseUrl,
+			successPath,
+			responseSuccess,
+			map[string]string{"foo": "bar"},
+		},
+		{
+			"Fail request: response interface decode",
+			baseUrl,
+			failPath,
+			responseFail,
+			map[string]string{"foo": "bar"},
+		},
+	}
+
+	assert := func(t *testing.T, title, baseUrl, path, expectedResponse string, params map[string]string) {
+		t.Run(title, func(t *testing.T) {
+			var data interface{}
+			request := createGetRequest(t, path, expectedResponse, baseUrl, params)
+			response, err := request.Decode(data)
+			if err != nil {
+				t.Fatal(err.Error())
+			}
+
+			err = json.Unmarshal([]byte(expectedResponse), &data)
+			if err != nil {
+				t.Fatal(err.Error())
+			}
+
+			if !reflect.DeepEqual(response, data) {
+				t.Errorf("Was expected '%+v', but got '%+v'", data, response)
+			}
+		})
+	}
+
+	for _, c := range cases {
+		assert(t, c.title, c.url, c.path, c.response, c.params)
+	}
+}
 
 func testServer(t *testing.T) (*http.Client, *http.ServeMux, *httptest.Server) {
 	t.Helper()
@@ -233,7 +237,7 @@ func createGetRequest(t *testing.T, path, expectedResponse, baseUrl string, para
 	handleFunc(t, mux, path, expectedResponse)
 
 	request := New(baseUrl, client)
-	err := request.Get(path, nil)
+	err := request.Get(path, params)
 	if err != nil {
 		t.Fatal(err.Error())
 	}
@@ -247,6 +251,7 @@ func createPostRequest(t *testing.T, path, expectedResponse, baseUrl string, bod
 	handleFunc(t, mux, path, expectedResponse)
 
 	request := New(baseUrl, client)
+	request.AddHeader("Content-type", "application/json")
 	err := request.Post(path, body)
 	if err != nil {
 		t.Fatal(err.Error())
