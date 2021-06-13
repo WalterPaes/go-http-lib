@@ -8,6 +8,7 @@ import (
 	"net/http"
 )
 
+// Request represents a http client
 type Request struct {
 	url          string
 	headers      map[string]string
@@ -18,6 +19,7 @@ type Request struct {
 	StatusCode int
 }
 
+// New creates a new Request instance
 func New(url string, client *http.Client) *Request {
 	return &Request{
 		url:     url,
@@ -26,6 +28,7 @@ func New(url string, client *http.Client) *Request {
 	}
 }
 
+// AddHeader increment http request headers
 func (c *Request) AddHeader(key, value string) *Request {
 	c.headers[key] = value
 	return c
@@ -37,6 +40,7 @@ func (c *Request) setHeaders() {
 	}
 }
 
+// Post do a http post request
 func (c *Request) Post(path string, body interface{}) error {
 	data, err := json.Marshal(body)
 	if err != nil {
@@ -53,6 +57,7 @@ func (c *Request) Post(path string, body interface{}) error {
 	return c.execute()
 }
 
+// Get do a http get request
 func (c *Request) Get(path string, params map[string]string) error {
 	request, err := http.NewRequest(http.MethodGet, c.url+path, nil)
 	if err != nil {
@@ -94,6 +99,7 @@ func (c *Request) readBody() ([]byte, error) {
 	return body, nil
 }
 
+// Json parse response body to json
 func (c *Request) Json() (string, error) {
 	body, err := c.readBody()
 	if err != nil {
@@ -102,6 +108,7 @@ func (c *Request) Json() (string, error) {
 	return string(body), nil
 }
 
+// Decode parse response body to a specific interface
 func (c *Request) Decode(i interface{}) (interface{}, error) {
 	body, err := c.readBody()
 	if err != nil {
