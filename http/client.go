@@ -8,6 +8,12 @@ import (
 	"net/http"
 )
 
+// HttpClient manage http requests
+type HttpClient interface {
+	Get(path string, params map[string]string) error
+	Post(path string, body interface{}) error
+}
+
 // Request represents a http client
 type Request struct {
 	url          string
@@ -15,7 +21,6 @@ type Request struct {
 	client       *http.Client
 	request      *http.Request
 	responseBody io.ReadCloser
-
 	StatusCode int
 }
 
